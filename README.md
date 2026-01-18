@@ -1,196 +1,191 @@
 # Lumina Sales Agent
 
-Lumina Sales Agent is an AI-driven sales assistant MVP, developed specifically for Expertise AI position application.
+> **AI-driven B2B Sales Assistant MVP**
+> *Developed for Expertise AI application*
 
-## Project Architecture
+## 📋 Project Overview
 
-### Backend (Python/Flask)
-- **`app.py`** - Flask main program, provides RESTful API
-- **`ingestion.py`** - Web crawling and vectorization module
-- **`vector_store.py`** - Pinecone vector database integration
-- **`requirements.txt`** - Python dependencies
+Lumina Sales Agent is a full-stack AI application designed to autonomously qualify B2B leads. It features a **Goal-Oriented RAG system** (Retrieval-Augmented Generation) that combines semantic search with keyword matching to provide accurate product information. The system intelligently decides when to ask for contact information based on conversation context and persists sales leads into a local database.
 
-### Frontend (React/TypeScript)
-- **Vite** - Build tool
-- **React 18** - UI framework
-- **TypeScript** - Type safety (strict mode)
-- **Tailwind CSS** - Styling framework
-- **shadcn/ui** - UI component library
-- **Chat Interface** - Main interaction interface
+---
 
-### Database
-- **SQLite** - Local Lead storage (simulating enterprise PostgreSQL)
+## 🎯 Core Features
 
-## Quick Start
+### 1. **Intelligent Conversation System (Goal-Oriented RAG)**
+- **Context-Aware Responses**: Uses **Hybrid Search** (Dense + Sparse) to retrieve precise information from the knowledge base, combining OpenAI Embeddings with BM25 keyword matching.
+- **Dynamic Sales Strategy**: The AI autonomously determines the optimal timing to request contact details based on user purchase intent, rather than following a rigid decision tree.
+- **Persistent Sessions**: Conversation history and state are stored in **SQLite**, ensuring context is preserved even across server restarts.
+
+### 2. **Advanced Web Crawler & Ingestion**
+- **Dynamic Content Support**: Uses **Playwright** (Headless Chromium) to render and scrape JavaScript-heavy SPAs (React/Vue sites).
+- **Structure-Aware Processing**: Converts HTML to Markdown using **Markdownify** to preserve headers and lists for better LLM comprehension.
+- **Recursive Chunking**: Smartly splits text by semantic boundaries (paragraphs > sentences) rather than fixed characters to maintain context.
+- **Multi-Tenant Isolation**: Implements metadata filtering (`client_id`) in vector storage to simulate SaaS data isolation.
+
+### 3. **Lead Management System**
+- **Automatic Capture**: Regex-based detection automatically extracts emails from natural conversation.
+- **Lead Storage**: Stores qualified leads in a structured **SQLite** database.
+- **Visual Feedback**: Frontend provides real-time UI indicators when a lead is successfully captured.
+
+### 4. **Modern Streaming UI**
+- **Real-time Streaming**: Implements **Server-Sent Events (SSE)** for specific character-by-character typing effects.
+- **Interactive Training**: Users can input any URL to instantly train the agent on new product data.
+
+---
+
+## 🛠️ Technology Stack
+
+### Backend
+- **Framework**: Python (Flask)
+- **AI/LLM**: Azure OpenAI (GPT-4o)
+- **Vector DB**: Pinecone (Serverless) + `pinecone-text` (Hybrid Search)
+- **Crawler**: Playwright + BeautifulSoup4 + Markdownify
+- **Database**: SQLite (Leads & Sessions)
+
+### Frontend
+- **Framework**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS + shadcn/ui
+- **State/Effects**: Custom React Hooks for SSE streaming
+
+---
+
+## 🔄 Architecture & Logic Flow
+
+### Data Ingestion Pipeline
+```
+User inputs URL → Playwright renders page → Markdown conversion → Recursive Chunking → 
+Generate Open AI Embeddings (Dense) + BM25 Vectors (Sparse) → Upsert to Pinecone
+```
+
+### Conversation Flow
+```
+User Message → Check Session/History (SQLite) → Detect Intent/Email → 
+Hybrid Search (Pinecone) → Assemble Context → Azure OpenAI (Stream) → 
+Frontend Render → SQLite Log
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+1. **Python 3.11+**
+2. **Node.js 18+** & npm
+3. **Azure OpenAI API Key & Endpoint** (Required for LLM)
+4. **Pinecone API Key** (Required for Vector Search)
 
 ### 1. Environment Configuration
 
-Copy `.env.example` to `.env` and fill in necessary API keys:
+Create a `.env` file in the root directory:
 
-```bash
-cp .env.example .env
+```env
+# Azure OpenAI Configuration
+AZURE_OPENAI_API_KEY=your-azure-key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2024-12-01-preview
+
+# Pinecone Configuration
+PINECONE_API_KEY=your-pinecone-key
+PINECONE_INDEX=lumina-sales-agent
+
+# Flask Configuration
+FLASK_ENV=development
+PORT=5000
 ```
-
-Edit `.env` file and fill in:
-- `AZURE_OPENAI_API_KEY` - Azure OpenAI API key
-- `AZURE_OPENAI_ENDPOINT` - Azure OpenAI Endpoint
-- `PINECONE_API_KEY` - Pinecone API key
-- `PINECONE_INDEX` - Pinecone index name (default: lumina-sales-agent)
 
 ### 2. Backend Setup
 
 ```bash
 cd backend
 
-# Create virtual environment
+# Create & Activate Virtual Environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
 
-# Install dependencies
+# Install Dependencies
 pip install -r requirements.txt
 
-# Run server
+# Run Playwright Install (First time only)
+playwright install chromium
+
+# Start Server
 python app.py
 ```
-
-Backend service will run on `http://localhost:5000`.
+*Server runs at http://localhost:5000*
 
 ### 3. Frontend Setup
 
 ```bash
 cd frontend
 
-# Install dependencies
+# Install Dependencies
 npm install
 
-# Run development server
+# Start Dev Server
 npm run dev
 ```
+*App runs at http://localhost:3000*
 
-Frontend service will run on `http://localhost:3000`.
+---
 
-## API Endpoints
-
-### Health Check
-- `GET /api/health` - Service health status
-
-### Chat
-- `POST /api/chat` - Send message and get AI response
-  ```json
-  {
-    "message": "User message content"
-  }
-  ```
-
-### Leads Management
-- `GET /api/leads` - Get all leads
-- `POST /api/leads` - Create new lead
-  ```json
-  {
-    "name": "Name",
-    "email": "email@example.com",
-    "company": "Company Name",
-    "phone": "Phone Number",
-    "status": "new",
-    "notes": "Notes"
-  }
-  ```
-
-### Data Ingestion
-- `POST /api/ingest` - Crawl web page and vectorize
-  ```json
-  {
-    "url": "https://example.com"
-  }
-  ```
-
-## Features
-
-- ✅ **AI Conversation** - Context-aware conversation based on Hybrid Search (Dense + Sparse)
-- ✅ **Web Crawling** - Automatically extract web content and vectorize
-- ✅ **Hybrid Search** - Semantic + Keyword search using Pinecone & BM25
-- ✅ **Lead Management** - SQLite database storage for sales leads
-- ✅ **Session Persistence** - Chat history stored in SQLite
-- ✅ **Dynamic Sales Strategy** - LLM-driven timing for asking contact info
-- ✅ **Modern UI** - Tailwind CSS + shadcn/ui components
-- ✅ **TypeScript Strict Mode** - Type safety guarantee
-
-## Tech Stack
-
-### Backend
-- Flask 3.0.0
-- Pinecone Client 3.0.0 & **pinecone-text** (Hybrid Search)
-- OpenAI (Azure OpenAI)
-- BeautifulSoup4 4.12.2
-- SQLite3 (Leads & Session Store)
-
-### Frontend
-- React 18.2.0
-- TypeScript 5.2.2
-- Vite 5.0.8
-- Tailwind CSS 3.3.6
-- shadcn/ui
-- Lucide React (icons)
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 .
 ├── backend/
-│   ├── app.py              # Flask main program
-│   ├── ingestion.py        # Data ingestion module
-│   ├── vector_store.py     # Pinecone integration
-│   ├── reset_vector_db.py  # Utility to reset vector db
-│   ├── view_leads.py       # Utility to view leads
-│   ├── requirements.txt    # Python dependencies
-│   └── lumina_leads.db     # SQLite database (auto-created)
+│   ├── app.py                 # Main Flask Application
+│   ├── ingestion.py           # Crawler & Vectorization Logic
+│   ├── vector_store.py        # Pinecone Wrapper
+│   ├── reset_vector_db.py     # Utility: Reset Pinecone Index
+│   ├── view_leads.py          # Utility: View SQLite Leads
+│   ├── requirements.txt       # Python Dependencies
+│   └── lumina_leads.db        # SQLite Database (Auto-generated)
+│
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── ui/         # shadcn/ui components
-│   │   │   └── Chat.tsx    # Chat interface
-│   │   ├── lib/
-│   │   │   └── utils.ts    # Utility functions
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── vite.config.ts
-│   └── tailwind.config.js
-├── .env.example            # Environment variable example
-├── .gitignore
-└── README.md
+│   │   ├── components/        # React Components (Chat, UI)
+│   │   ├── lib/               # Utilities
+│   │   └── App.tsx            # Main Entry Logic
+│   ├── vite.config.ts         # Vite Config (Proxy Setup)
+│   └── tailwind.config.js     # Tailwind Styling
+│
+└── README.md                  # This file
 ```
 
-## Development Notes
+---
 
-### Unified API Response Format
+## 🔧 API Documentation
 
-All API endpoints follow a unified response format:
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | Check service status |
+| `POST` | `/api/ingest` | Crawl URL and train AI (`{url: string}`) |
+| `POST` | `/api/chat` | Send message (`{message: string, stream: true}`) |
+| `GET` | `/api/leads` | Retrieve all captured sales leads |
 
-```json
-{
-  "success": true,
-  "message": "Operation successful",
-  "data": { ... }
-}
-```
+---
 
-### TypeScript Strict Mode
+## 💡 Development Challenges & Solutions
 
-The project uses TypeScript strict mode, including:
-- `strict: true`
-- `noUnusedLocals: true`
-- `noUnusedParameters: true`
-- `noUncheckedIndexedAccess: true`
+1.  **Dynamic Content Extraction**:
+    *   *Challenge*: `requests` library couldn't scrape SPA sites (React/Vue).
+    *   *Solution*: Implemented **Playwright** to render full DOM before extraction.
 
-### Flask Production-Grade Syntax
+2.  **Semantic Context Loss**:
+    *   *Challenge*: Simple character splitting broke sentences and headers.
+    *   *Solution*: Used **Markdownify** to preserve structure and implemented **Recursive Chunking** to respect paragraph boundaries.
 
-- Complete type hints
-- Unified error handling
-- Standardized code structure
+3.  **Accuracy vs. Keywords**:
+    *   *Challenge*: Pure semantic search missed specific product model numbers.
+    *   *Solution*: Implemented **Hybrid Search** weighting Dense vectors (0.7) and Sparse BM25 vectors (0.3).
 
-## License
+---
 
-This project is an MVP demo project for Expertise AI position application.
+## ⚠️ Common Issues
+
+*   **Backend Startup Error**: If `PINECONE_API_KEY` is missing, check your `.env` file location.
+*   **Playwright Error**: If you see "Executable not found", run `python -m playwright install chromium`.
+*   **Frontend Network Error**: Ensure backend is running on port 5000.
