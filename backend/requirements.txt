@@ -1,0 +1,10 @@
+flask
+flask-cors
+openai
+python-dotenv
+requests
+beautifulsoup4
+pinecone-client
+pinecone-text
+playwright==1.40.0
+markdownify==0.11.6
